@@ -4,14 +4,27 @@ Status: **COMPLETED**
 
 已完成：
 
-- 使用 `text-embedding-v4` 将文本转换为 1024 维向量
-- 将用户问题转换为 Embedding
-- 手写 Cosine Similarity
-- 计算问题与各文档之间的相似度
-- 按 similarity 从高到低排序
-- 实现 Top-K Retrieval
-- 将检索流程封装为 `search_similar_documents()`
-- 使用不同问题验证 Semantic Search
+- 使用 Python 读取 TXT 文档
+- 理解 `with open()` 和文件自动关闭
+- 理解文本读取后得到的是一个完整 `str`
+- 实现固定字符长度 Chunking
+- 理解 `chunk_size`
+- 实现 `chunk_overlap`
+- 理解 overlap 可以减少边界信息丢失，但不能保证语义完整
+- 实现按段落优先切分
+- 实现按章节标题进行结构化 Chunking
+- 将文档标题与章节正文进行区分
+- 为每个 Chunk 添加 Metadata
+
+当前 Chunk 数据结构：
+
+```python
+{
+    "text": "第2章 在宅勤務...",
+    "source": "company_rules.txt",
+    "title": "社員就業規則",
+    "chunk_index": 1
+}
 
 验证示例：
 
@@ -32,16 +45,17 @@ Status: **COMPLETED**
 - Top-K 结果不代表每一条都真正相关，后续需要进一步学习 threshold 和 Retriever 策略
 
 
+```markdown
 ## Current Task
 
-Phase 2 - Document Loading & Chunking
+Phase 3 - Embedding & Vector Database
 
 下一步：
 
-1. 准备真实 TXT 文档
-2. 读取文件内容
-3. 理解为什么长文档需要 Chunking
-4. 实现最基础文本切分
-5. 学习 chunk_size
-6. 学习 chunk_overlap
-7. 为 Chunk 保存 metadata
+1. 将 Phase 2 生成的 Chunk 转换为 Embedding
+2. 理解 Vector DB 为什么存在
+3. 安装并使用 Chroma
+4. 将 Vector + Text + Metadata 保存到 Vector DB
+5. 将用户问题转换为 Embedding
+6. 使用 Vector Search 检索 Top-K Chunks
+7. 对比 Phase 1 手写检索与 Vector DB 检索
