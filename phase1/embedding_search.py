@@ -1,15 +1,12 @@
-import os
 import math
+import os
+
 import dashscope
 from dotenv import load_dotenv
 
 
 load_dotenv()
 
-print("API KEY loaded:", bool(os.getenv("DASHSCOPE_API_KEY")))
-print("Embedding model:", os.getenv("EMBEDDING_MODEL"))
-
-results = []
 
 documents = [
     "有給休暇は年間20日付与されます。",
@@ -17,7 +14,9 @@ documents = [
     "交通費は月額5万円を上限として支給されます。",
     "社員食堂は平日の11時から14時まで営業しています。"
 ]
+
 question = "家で仕事をすることはできますか？"
+
 
 # 中文：把多条文本发送给 Embedding 模型
 # 函数名：get_embeddings
@@ -54,39 +53,54 @@ def cosine_similarity(vector_a: list, vector_b: list) -> float:
     )
 
     return dot_product / (magnitude_a * magnitude_b)
-    
 
-response = get_embeddings(documents)
-question_response = get_embeddings([question])
-embeddings = response.output["embeddings"]
 
-print("向量数量:", len(embeddings))
-print("第一个向量维度:", len(embeddings[0]["embedding"]))
-print("第一个向量前5个数字:", embeddings[0]["embedding"][:5])
+# 中文：根据用户问题检索最相关的文档
+# 函数名：search_similar_documents
+# question：用户问题
+# documents：待检索文档列表
+# top_k：返回相似度最高的前几条
+# 返回值：排序后的 Top-K 检索结果
+def search_similar_documents(
+    question: str,
+    documents: list,
+    top_k: int = 2
+) -> list:
+    document_response = get_embeddings(documents)
+    document_embeddings = document_response.output["embeddings"]
 
-question_vector = question_response.output["embeddings"][0]["embedding"]
-print("问题向量维度:", len(question_vector))
-print("问题向量前5个数字:", question_vector[:5])
+    question_response = get_embeddings([question])
+    question_vector = question_response.output["embeddings"][0]["embedding"]
 
-for embedding_item in embeddings:
-    document_vector = embedding_item["embedding"]
-    text_index = embedding_item["text_index"]
+    results = []
 
-    similarity = cosine_similarity(
-        question_vector,
-        document_vector
+    for embedding_item in document_embeddings:
+        document_vector = embedding_item["embedding"]
+        text_index = embedding_item["text_index"]
+
+        similarity = cosine_similarity(
+            question_vector,
+            document_vector
+        )
+
+        results.append({
+            "text": documents[text_index],
+            "similarity": similarity
+        })
+
+    results.sort(
+        key=lambda item: item["similarity"],
+        reverse=True
     )
 
-    results.append({
-        "text": documents[text_index],
-        "similarity": similarity
-    })
-results.sort(
-    key=lambda item: item["similarity"],
-    reverse=True
+    return results[:top_k]
+
+
+search_results = search_similar_documents(
+    question,
+    documents,
+    top_k=2
 )
 
-top_k = results[:2]
-
-for result in top_k:
+for result in search_results:
     print(result)
