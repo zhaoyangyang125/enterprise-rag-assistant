@@ -1,20 +1,48 @@
-### Phase 1 - Basic Vector Search
+## Phase 3 - Vector Store & Basic RAG
 
-Status: **COMPLETED**
+状态：已完成
 
-已完成：
+### 已完成功能
 
-- 使用 Python 读取 TXT 文档
-- 理解 `with open()` 和文件自动关闭
-- 理解文本读取后得到的是一个完整 `str`
-- 实现固定字符长度 Chunking
-- 理解 `chunk_size`
-- 实现 `chunk_overlap`
-- 理解 overlap 可以减少边界信息丢失，但不能保证语义完整
-- 实现按段落优先切分
-- 实现按章节标题进行结构化 Chunking
-- 将文档标题与章节正文进行区分
-- 为每个 Chunk 添加 Metadata
+- 安装并使用 ChromaDB
+- 创建 `company_documents` Collection
+- 使用 DashScope Embedding 将文档 Chunk 转换为 1024 维向量
+- 向 Chroma 中保存以下内容：
+  - id
+  - embedding
+  - document text
+  - metadata
+- 实现 `add_documents()`
+- 实现 `search_documents()`
+- 实现 Top-K 向量检索
+- 理解以下数据之间的对应关系：
+  - `texts[0]`
+  - `vectors[0]`
+  - `metadatas[0]`
+  - `ids[0]`
+  - 它们共同代表同一个 Chunk
+- 将 Chroma 原始查询结果整理成 `list[dict]`
+- 实现 `build_context()`
+- 实现 `generate_answer()`
+- 打通 Phase 2 文档读取 / Chunking 与 Phase 3 Vector Store
+- 完成最小可运行 RAG 流程：
+
+```text
+Document
+↓
+Chunk
+↓
+Embedding
+↓
+Chroma
+↓
+Retrieval
+↓
+Context
+↓
+LLM
+↓
+Answer
 
 当前 Chunk 数据结构：
 
