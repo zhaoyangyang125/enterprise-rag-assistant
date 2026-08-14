@@ -1,6 +1,6 @@
-from document_loader import load_txt
-
 import re
+
+from phase2.document_loader import load_txt
 
 
 # 中文：为 Chunk 添加来源等 Metadata
@@ -23,10 +23,11 @@ def add_metadata(
 
     return documents
 
-# 中文：按照章节标题切分文档
+
+# 中文：按照“第X章”拆分文档
 # 函数名：chunk_by_section
-# text：需要切分的完整文档文本
-# 返回值：每个章节组成一个 Chunk
+# text：完整文档文本
+# 返回值：章节列表
 def chunk_by_section(text: str) -> list:
     sections = re.split(
         r"(?=第\d+章\s)",
@@ -44,6 +45,7 @@ def chunk_by_section(text: str) -> list:
         chunks.append(section)
 
     return chunks
+
 
 # 中文：优先按照段落边界切分文本
 # 函数名：chunk_by_paragraph
@@ -83,15 +85,16 @@ def chunk_by_paragraph(
     return chunks
 
 
-# 中文：为按章节切分后的 Chunk 添加 Metadata
+# 中文：把章节整理成带 metadata 的文档记录
 # 函数名：build_section_documents
-# sections：chunk_by_section 返回的章节列表
-# source：原始文件名
-# 返回值：包含 text / source / title / chunk_index 的文档列表
+# sections：章节列表
+# source：源文件名
+# 返回值：文档 Chunk 列表
 def build_section_documents(
     sections: list,
     source: str
 ) -> list:
+
     if not sections:
         return []
 
@@ -109,25 +112,19 @@ def build_section_documents(
 
     return documents
 
-document_text = load_txt(
-    "phase2/sample_documents/company_rules.txt"
-)
 
+# 中文：只有直接运行 chunking.py 时才执行下面测试代码
+if __name__ == "__main__":
+    file_path = "phase2/sample_documents/company_rules.txt"
 
-sections = chunk_by_section(document_text)
+    text = load_txt(file_path)
 
-documents = build_section_documents(
-    sections,
-    source="company_rules.txt"
-)
+    sections = chunk_by_section(text)
 
-for document in documents:
-    print(document)
+    documents = build_section_documents(
+        sections=sections,
+        source="company_rules.txt"
+    )
 
-# documents = add_metadata(
-#     chunks,
-#     source="company_rules.txt"
-# )
-
-# for document in documents:
-#     print(document)
+    for document in documents:
+        print(document)
