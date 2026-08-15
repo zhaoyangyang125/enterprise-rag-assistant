@@ -84,6 +84,7 @@ def search_documents(
             "text": result_documents[index],
             "source": metadata["source"],
             "title": metadata["title"],
+            "section": metadata["section"],
             "chunk_index": metadata["chunk_index"],
             "distance": result_distances[index]
         })
@@ -91,14 +92,35 @@ def search_documents(
     return results
 
 
+# 中文：从检索结果中整理来源信息
+# 函数名：build_sources
+# results：Top-K 检索结果
+# 返回值：包含文件名和 Chunk 信息的来源字符串
+def build_sources(results: list) -> str:
+    sources = []
+
+    for result in results:
+        source_text = (
+            f'{result["source"]} / '
+            f'{result["section"]}'
+        )
+
+        if source_text not in sources:
+            sources.append(source_text)
+
+    return "\n".join(
+        f"- {source}"
+        for source in sources
+    )
 # 中文：把 Top-K 文档整理成给 LLM 使用的 Context
-# 函数名：build_context
+# 同时加入来源文件名
 def build_context(results: list) -> str:
     context_parts = []
 
     for index, result in enumerate(results):
         context_parts.append(
             f"【参考資料{index + 1}】\n"
+            f"出典: {result['source']}\n"
             f"{result['text']}"
         )
 
@@ -158,7 +180,7 @@ def generate_answer(
 print("Stored count:", collection.count())
 
 
-question = "家で仕事をすることはできますか？"
+question = "出張中の食事代はいくらまで支給されますか？"
 
 
 results = search_documents(
@@ -179,7 +201,11 @@ answer = generate_answer(
     question=question,
     context=context
 )
-
+sources = build_sources(results)
 
 print("\n===== Answer =====")
 print(answer)
+
+
+print("\n===== Sources =====")
+print(sources)
