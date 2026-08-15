@@ -1,5 +1,6 @@
 import os
 import hashlib
+
 import chromadb
 import dashscope
 from dotenv import load_dotenv
@@ -12,6 +13,26 @@ from phase2.chunking import (
 
 
 load_dotenv()
+
+
+# 中文：取得指定目录下所有 TXT 文件
+# 函数名：get_txt_files
+# directory：文件夹路径
+# 返回值：TXT 文件路径列表
+def get_txt_files(directory: str) -> list:
+    file_paths = []
+
+    for file_name in os.listdir(directory):
+        if file_name.endswith(".txt"):
+            file_path = os.path.join(
+                directory,
+                file_name
+            )
+
+            file_paths.append(file_path)
+
+    return file_paths
+
 
 # 中文：计算文件内容的 SHA-256 Hash
 # 函数名：calculate_file_hash
@@ -33,6 +54,9 @@ def calculate_file_hash(file_path: str) -> str:
 
 
 # 中文：把文本列表转换成 Embedding
+# 函数名：get_embeddings
+# texts：需要转换的文本列表
+# 返回值：Embedding 向量列表
 def get_embeddings(texts: list) -> list:
     response = dashscope.TextEmbedding.call(
         api_key=os.getenv("DASHSCOPE_API_KEY"),
@@ -46,19 +70,25 @@ def get_embeddings(texts: list) -> list:
     vectors = []
 
     for item in embeddings:
-        vectors.append(item["embedding"])
+        vectors.append(
+            item["embedding"]
+        )
 
     return vectors
 
 
-# 中文：创建持久化 Chroma
+# 中文：创建持久化 Chroma Client
 client = chromadb.PersistentClient(
     path="data/chroma"
 )
 
+
+# 中文：取得或创建文档 Collection
 collection = client.get_or_create_collection(
     name="company_documents"
 )
+
+
 # 中文：取得数据库中某个文件保存的 Hash
 # 函数名：get_stored_file_hash
 # collection：Chroma Collection
@@ -83,26 +113,6 @@ def get_stored_file_hash(
     return metadata.get("file_hash")
 
 
-# 中文：检查某个文件是否已经存在于 Chroma
-# 函数名：document_exists
-# collection：Chroma Collection
-# source：文件名
-# 返回值：存在返回 True，不存在返回 False
-def document_exists(
-    collection,
-    source: str
-) -> bool:
-
-    result = collection.get(
-        where={
-            "source": source
-        }
-    )
-
-    return len(result["ids"]) > 0
-
-
-
 # 中文：删除指定 source 的所有 Chunk
 # 函数名：delete_document
 # collection：Chroma Collection
@@ -120,21 +130,29 @@ def delete_document(
 
 
 # 中文：把 Chunk 加入 Chroma
+# 函数名：add_documents
+# documents：Chunk 列表
+# collection：Chroma Collection
+# file_hash：当前文件 Hash
 def add_documents(
     documents: list,
     collection,
     file_hash: str
 ) -> None:
+
     texts = []
     metadatas = []
     ids = []
 
     for document in documents:
-        texts.append(document["text"])
+        texts.append(
+            document["text"]
+        )
 
         metadatas.append({
             "source": document["source"],
             "title": document["title"],
+            "section": document["section"],
             "chunk_index": document["chunk_index"],
             "file_hash": file_hash
         })
@@ -153,66 +171,95 @@ def add_documents(
     )
 
 
-file_path = "phase2/sample_documents/company_rules.txt"
+# =========================
+# 中文：多文档索引流程
+# =========================
 
-file_hash = calculate_file_hash(file_path)
+directory = "phase2/sample_documents"
 
-text = load_txt(file_path)
-
-sections = chunk_by_section(text)
-
-documents = build_section_documents(
-    sections=sections,
-    source="company_rules.txt"
-)
-
-source = "company_rules.txt"
-
-stored_hash = get_stored_file_hash(
-    collection=collection,
-    source=source
-)
+file_paths = get_txt_files(directory)
 
 
-if stored_hash is None:
-    # 中文：数据库里完全没有这个文件
-    print(f"{source} is not indexed. Start indexing...")
+for file_path in file_paths:
 
-    add_documents(
-        documents=documents,
-        collection=collection,
-        file_hash=file_hash
+    # 中文：取得文件名
+    # 例如：
+    # phase2/sample_documents/company_rules.txt
+    # ↓
+    # company_rules.txt
+    source = os.path.basename(file_path)
+
+    # 中文：计算当前文件 Hash
+    file_hash = calculate_file_hash(
+        file_path
     )
 
-    print("Indexing completed.")
+    # 中文：读取 TXT 文档
+    text = load_txt(
+        file_path
+    )
 
+    # 中文：按章节切分文档
+    sections = chunk_by_section(
+        text
+    )
 
-elif stored_hash == file_hash:
-    # 中文：文件存在，而且内容没有变化
-    print(f"{source} has not changed. Skip indexing.")
+    # 中文：生成带 metadata 的 Chunk
+    documents = build_section_documents(
+        sections=sections,
+        source=source
+    )
 
-
-else:
-    # 中文：文件存在，但是内容已经发生变化
-    print(f"{source} has changed. Reindexing...")
-
-    delete_document(
+    # 中文：取得数据库里的旧 Hash
+    stored_hash = get_stored_file_hash(
         collection=collection,
         source=source
     )
 
-    add_documents(
-        documents=documents,
-        collection=collection,
-        file_hash=file_hash
-    )
+    # 中文：数据库里没有这个文件
+    if stored_hash is None:
+        print(
+            f"{source} is not indexed. "
+            f"Start indexing..."
+        )
 
-    print("Reindexing completed.")
+        add_documents(
+            documents=documents,
+            collection=collection,
+            file_hash=file_hash
+        )
 
-print("Stored count:", collection.count())
+        print("Indexing completed.")
+
+    # 中文：文件存在，而且内容没有变化
+    elif stored_hash == file_hash:
+        print(
+            f"{source} has not changed. "
+            f"Skip indexing."
+        )
+
+    # 中文：文件存在，但是内容发生了变化
+    else:
+        print(
+            f"{source} has changed. "
+            f"Reindexing..."
+        )
+
+        delete_document(
+            collection=collection,
+            source=source
+        )
+
+        add_documents(
+            documents=documents,
+            collection=collection,
+            file_hash=file_hash
+        )
+
+        print("Reindexing completed.")
 
 
-
-print("File hash:", file_hash)
-
-
+print(
+    "Stored count:",
+    collection.count()
+)

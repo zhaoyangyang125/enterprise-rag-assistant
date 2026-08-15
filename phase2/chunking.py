@@ -85,11 +85,11 @@ def chunk_by_paragraph(
     return chunks
 
 
-# 中文：把章节整理成带 metadata 的文档记录
+# 中文：把章节列表转换成带 Metadata 的文档列表
 # 函数名：build_section_documents
-# sections：章节列表
-# source：源文件名
-# 返回值：文档 Chunk 列表
+# sections：按章节切分后的文本列表
+# source：来源文件名
+# 返回值：带 text / source / title / section / chunk_index 的列表
 def build_section_documents(
     sections: list,
     source: str
@@ -98,20 +98,27 @@ def build_section_documents(
     if not sections:
         return []
 
+    # 中文：第一个元素是整个文档标题
     title = sections[0]
 
     documents = []
 
     for index, section in enumerate(sections[1:]):
+
+        # 中文：章节文本第一行就是章节标题
+        # 例如：
+        # 第2章 食事代
+        section_title = section.splitlines()[0]
+
         documents.append({
             "text": section,
             "source": source,
             "title": title,
+            "section": section_title,
             "chunk_index": index
         })
 
     return documents
-
 
 # 中文：只有直接运行 chunking.py 时才执行下面测试代码
 if __name__ == "__main__":

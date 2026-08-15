@@ -1,26 +1,34 @@
-## Phase 4 - Persistent Vector Store / Index Lifecycle
+## Phase 5 - Multi-Document Indexing and Source Citation
 
 Status: COMPLETED
 
 Implemented:
 
-- Added Chroma PersistentClient with local persistence.
-- Split document indexing and RAG querying into separate modules:
-  - phase4/index_documents.py
-  - phase4/rag_query.py
-- Added source-based document existence check.
-- Added SHA-256 file hash calculation.
-- Stored file hash in Chroma metadata.
-- Added document update detection.
-- Reindexing flow:
-  - New document → index
-  - Existing unchanged document → skip
-  - Existing changed document → delete old chunks and rebuild index
-- Verified that updated document content is reflected in RAG answers.
-- Added data/chroma/ to .gitignore.
+- Added automatic TXT file discovery from the document directory.
+- Added multi-document indexing.
+- Each document is independently checked using:
+  - source
+  - SHA-256 file hash
+- Added a second sample document: expense_rules.txt.
+- Added section metadata to document chunks.
+- Added cross-document semantic retrieval.
+- Added source and section information to citations.
+- Added deterministic source output based on retrieved metadata.
+- Verified retrieval across multiple documents.
+
+Verification:
+
+- company_rules.txt: 4 chunks
+- expense_rules.txt: 2 chunks
+- total indexed chunks: 6
+- unchanged documents are skipped
+- updated documents can be reindexed
+- expense-related questions retrieve expense_rules.txt
+- final answer displays source file and section
 
 Next:
 
-- Improve multi-document indexing flow.
-- Add source citation to final answer.
-- Start FastAPI integration.
+- FastAPI integration
+- API request/response models
+- expose RAG query as backend endpoint
+- prepare Web UI integration
