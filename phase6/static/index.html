@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Document QA Assistant</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background: #f5f5f5;
+        }
+
+        h1 {
+            margin-bottom: 24px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 12px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .sources {
+            margin-top: 20px;
+            color: #555;
+            white-space: pre-line;
+        }
+
+        .loading {
+            margin-top: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>社内文書 QA アシスタント</h1>
+
+<textarea
+    id="question"
+    placeholder="質問を入力してください。例：出張中の食事代はいくらまで支給されますか？"
+></textarea>
+
+<br>
+
+<button onclick="askQuestion()">
+    質問する
+</button>
+
+<div id="loading" class="loading"></div>
+
+<div id="result" class="result" style="display: none;">
+    <h2>回答</h2>
+    <div id="answer"></div>
+
+    <div class="sources">
+        <strong>Sources</strong>
+        <div id="sources"></div>
+    </div>
+</div>
+
+<script>
+    async function askQuestion() {
+
+        const question = document.getElementById("question").value.trim();
+
+        if (!question) {
+            alert("質問を入力してください。");
+            return;
+        }
+
+        const loading = document.getElementById("loading");
+        const result = document.getElementById("result");
+
+        loading.textContent = "回答を生成しています...";
+        result.style.display = "none";
+
+        try {
+            const response = await fetch("/ask", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    question: question
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Request failed");
+            }
+
+            const data = await response.json();
+
+            document.getElementById("answer").textContent = data.answer;
+            document.getElementById("sources").textContent = data.sources;
+
+            result.style.display = "block";
+
+        } catch (error) {
+            alert("エラーが発生しました。");
+            console.error(error);
+
+        } finally {
+            loading.textContent = "";
+        }
+    }
+</script>
+
+</body>
+</html>
