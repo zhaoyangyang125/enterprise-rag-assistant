@@ -1,34 +1,463 @@
+# Project 2 Status
+
+## Enterprise Document QA Assistant
+
+Repository:
+
+```text
+zhaoyangyang125/enterprise-rag-assistant
+```
+
+Deployment:
+
+```text
+https://enterprise-rag-assistant-kc4v.onrender.com/
+```
+
+Status:
+
+```text
+COMPLETED / DEPLOYED
+```
+
+---
+
+## Phase 1 - Embedding and Vector Similarity
+
+Status: COMPLETED
+
+Implemented:
+
+* DashScope Embedding
+* 1024-dimensional vectors
+* Manual cosine similarity
+* Top-K semantic search
+* Question Embedding
+* Document Embedding
+
+Key Learning:
+
+```text
+Text
+→ Embedding
+→ Vector
+→ Similarity
+→ Top-K
+```
+
+---
+
+## Phase 2 - Document Loading and Chunking
+
+Status: COMPLETED
+
+Implemented:
+
+* TXT loading
+* Section-based Chunking
+* Chunk metadata
+* source
+* title
+* section
+* chunk_index
+
+Key Learning:
+
+A document should be divided into retrievable units before being stored in the Vector Database.
+
+---
+
+## Phase 3 - Vector Store and Minimal RAG
+
+Status: COMPLETED
+
+Implemented:
+
+* Chroma Vector Store
+* add_documents()
+* search_documents()
+* build_context()
+* generate_answer()
+* Minimal RAG pipeline
+
+RAG Flow:
+
+```text
+Question
+→ Question Embedding
+→ Chroma Search
+→ Top-K Documents
+→ Context
+→ LLM
+→ Answer
+```
+
+---
+
+## Phase 4 - Persistent Vector Store and Incremental Indexing
+
+Status: COMPLETED
+
+Implemented:
+
+* chromadb.PersistentClient
+* Indexing / Query separation
+* SHA-256 file hash
+* New document detection
+* Unchanged document skip
+* Modified document reindex
+* Old Chunk deletion
+* Persistent Chroma storage
+
+Rules:
+
+```text
+New File
+→ ADD
+
+Unchanged File
+→ SKIP
+
+Modified File
+→ DELETE OLD CHUNKS
+→ RE-EMBED
+→ REINDEX
+```
+
+Important:
+
+```text
+source
+= identifies which file a Chunk belongs to
+
+file_hash
+= determines whether file content changed
+
+embedding
+= used for retrieval
+
+document
+= original text shown to LLM
+
+metadata
+= management / traceability / filtering
+```
+
+---
+
 ## Phase 5 - Multi-Document Indexing and Source Citation
 
 Status: COMPLETED
 
 Implemented:
 
-- Added automatic TXT file discovery from the document directory.
-- Added multi-document indexing.
-- Each document is independently checked using:
-  - source
-  - SHA-256 file hash
-- Added a second sample document: expense_rules.txt.
-- Added section metadata to document chunks.
-- Added cross-document semantic retrieval.
-- Added source and section information to citations.
-- Added deterministic source output based on retrieved metadata.
-- Verified retrieval across multiple documents.
+* Automatic TXT file discovery
+* Multi-document indexing
+* Independent Hash checking per document
+* Added expense_rules.txt
+* Cross-document semantic retrieval
+* section metadata
+* Source Citation
+* Metadata-based deterministic source output
 
 Verification:
 
-- company_rules.txt: 4 chunks
-- expense_rules.txt: 2 chunks
-- total indexed chunks: 6
-- unchanged documents are skipped
-- updated documents can be reindexed
-- expense-related questions retrieve expense_rules.txt
-- final answer displays source file and section
+```text
+company_rules.txt : 4 chunks
+expense_rules.txt : 2 chunks
+
+Total : 6 chunks
+```
+
+Verified:
+
+* unchanged documents are skipped
+* updated documents can be reindexed
+* expense questions retrieve expense_rules.txt
+* answer shows source file and section
+
+---
+
+## Phase 6 - FastAPI / Web UI / Docker
+
+Status: COMPLETED
+
+Implemented:
+
+* FastAPI backend
+* Pydantic request model
+* POST /ask
+* GET /health
+* Existing RAG pipeline integration
+* JSON response
+* Japanese Web UI
+* JavaScript Fetch API
+* Dockerfile
+* .dockerignore
+* Container startup indexing
+
+API Flow:
+
+```text
+Web UI
+→ POST /ask
+→ FastAPI
+→ search_documents()
+→ Chroma
+→ build_context()
+→ LLM
+→ build_sources()
+→ JSON Response
+→ Web UI
+```
+
+Docker Flow:
+
+```text
+Container Start
+→ Index sample documents
+→ Create Chroma index
+→ Start Uvicorn / FastAPI
+```
+
+---
+
+## Deployment
+
+Platform:
+
+```text
+Render
+```
+
+Public URL:
+
+```text
+https://enterprise-rag-assistant-kc4v.onrender.com/
+```
+
+Verified:
+
+* Web UI accessible
+* /health working
+* RAG query working
+* Answer generation working
+* Sources displayed
+* Docker deployment working
+
+---
+
+## Git Workflow Practiced
+
+```text
+git switch -c feature/xxx
+→ development
+
+git add
+→ Working Directory → Staging Area
+
+git commit
+→ Staging Area → Local Git History
+
+git push
+→ Local Branch → GitHub Feature Branch
+
+Pull Request
+→ Request feature branch → main merge
+
+Merge
+→ Feature code becomes part of main
+
+git switch main
+git pull
+→ GitHub latest main → Local main
+```
+
+Phase 6:
+
+```text
+feature/phase6-fastapi-backend
+→ PR #6
+→ main
+→ local main sync completed
+```
+
+---
+
+## Important RAG Understanding
+
+### Vector is not converted back into Text
+
+Chroma stores:
+
+```text
+id
+embedding
+document
+metadata
+```
+
+The vector is used to locate relevant records.
+
+After retrieval, the original `document` text is passed to the LLM.
+
+---
+
+### Document Embedding vs Question Embedding
+
+```text
+Document Embedding
+→ generated during Indexing
+→ reusable when document does not change
+
+Question Embedding
+→ generated for every user question
+```
+
+---
+
+### Source Citation
+
+Sources are not generated by the LLM.
+
+They are built from retrieved metadata:
+
+```text
+source
++
+section
+→ citation
+```
+
+This improves traceability and prevents the LLM from inventing source names.
+
+---
+
+## Current Weak Points / Review Targets
+
+The main weakness is not understanding the RAG flow, but converting requirements into code from scratch.
+
+Priority review:
+
+```text
+Requirement
+→ identify input/output
+→ choose data structure
+→ choose tool/function
+→ write implementation
+```
+
+Python review targets:
+
+* list vs dict
+* metadata vs metadatas
+* dictionary key access
+* commas and indentation
+* zip()
+* f-string
+* variable scope
+* function parameters
+* return values
+
+RAG / Chroma review targets:
+
+* add() vs query()
+* query_embeddings batch structure
+* Chroma query result structure
+* results["documents"][0]
+* results["metadatas"][0]
+* build_context()
+* Source Citation
+
+FastAPI review targets:
+
+* BaseModel
+* Request Model
+* app = FastAPI()
+* @app.post()
+* request.question
+* JSON request / response
+
+---
+
+## Interview Review Topics
+
+Must be able to explain:
+
+1. What is RAG?
+2. Why use Embedding?
+3. How semantic retrieval works.
+4. Why documents are Chunked.
+5. What Chroma stores.
+6. Difference between document and metadata.
+7. Why document embeddings can be reused.
+8. Why question embeddings are generated for every query.
+9. How incremental indexing works.
+10. Why SHA-256 is used.
+11. How multiple documents are stored in one Collection.
+12. How Source Citation is generated.
+13. Why the Source is generated from metadata instead of the LLM.
+14. How FastAPI connects Web UI and RAG.
+15. What Docker solves.
+16. How the application is deployed.
+
+---
+
+## Final Architecture
+
+```text
+TXT Documents
+    ↓
+Load
+    ↓
+Chunk
+    ↓
+Metadata
+    ↓
+Embedding
+    ↓
+Chroma
+    ↓
+Persistent / Incremental Index
+
+User Question
+    ↓
+Web UI
+    ↓
+FastAPI
+    ↓
+Question Embedding
+    ↓
+Chroma Top-K Retrieval
+    ↓
+Documents + Metadata
+    ↓
+Context
+    ↓
+LLM
+    ↓
+Answer
+
+Metadata
+    ↓
+Sources
+```
+
+---
+
+## Project 2 Final Status
+
+```text
+Project 2
+Enterprise Document QA Assistant
+
+COMPLETED
+DEPLOYED
+READY FOR PORTFOLIO
+```
 
 Next:
 
-- FastAPI integration
-- API request/response models
-- expose RAG query as backend endpoint
-- prepare Web UI integration
+```text
+Project 3
+```
